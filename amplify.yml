@@ -20,6 +20,23 @@ frontend:
         - 'echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" >> .env.local'
         - 'echo "DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}" >> .env.local'
         - 'echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}" >> .env.local'
+        # Try to directly access SSM parameters if Environment Variables aren't working
+        - |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY not found in environment, attempting to get from SSM..."
+            # Try to get from SSM directly (make sure IAM permissions are set)
+            export SSM_SUPABASE_KEY=$(aws ssm get-parameter --name "/amplify/dyapawq5wdyx3/main/SUPABASE_SERVICE_ROLE_KEY" --with-decryption --query "Parameter.Value" --output text 2>/dev/null || echo "")
+            if [ ! -z "$SSM_SUPABASE_KEY" ]; then
+              echo "Successfully retrieved SUPABASE_SERVICE_ROLE_KEY from SSM"
+              echo "SUPABASE_SERVICE_ROLE_KEY=$SSM_SUPABASE_KEY" >> .env.local
+            else
+              echo "Failed to retrieve SUPABASE_SERVICE_ROLE_KEY from SSM"
+            fi
+          fi
+        # Debug: Check if SUPABASE variables exist (no values shown for security)
+        - 'echo "Checking environment variables presence:"' 
+        - 'echo "NEXT_PUBLIC_SUPABASE_URL exists: $(if [ ! -z \"$NEXT_PUBLIC_SUPABASE_URL\" ]; then echo YES; else echo NO; fi)"'
+        - 'echo "SUPABASE_SERVICE_ROLE_KEY exists: $(if [ ! -z \"$SUPABASE_SERVICE_ROLE_KEY\" ]; then echo YES; else echo NO; fi)"'
         # Safely show the environment file without revealing secrets
         - 'echo "Environment file created for frontend build"'
     build:
