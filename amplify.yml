@@ -15,7 +15,6 @@ frontend:
         - 'echo "NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY=$NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY" >> .env.local'
         - 'echo "NEXT_PUBLIC_AWS_REGION=$AWS_REGION" >> .env.local'
         - 'echo "NEXT_PUBLIC_API_ENDPOINT=$NEXT_PUBLIC_API_ENDPOINT" >> .env.local'
-        - 'echo "AMPLIFY_SKIP_APP_ID_MISMATCH_CHECK=true" >> .env.local'
         # Safely show the environment file without revealing secrets
         - 'echo "Environment file created for frontend build"'
     build:
@@ -47,10 +46,8 @@ function:
     environment:
       variables:
         NODE_ENV: "production"
-        AMPLIFY_SKIP_APP_ID_MISMATCH_CHECK: "true"
         # Add direct references to environment variables from Amplify console
         STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
         STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
         DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
         SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-        RESEND_API_KEY: ${RESEND_API_KEY} 

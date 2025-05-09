@@ -16,10 +16,8 @@
     {
       "cloudFormationParameterName": "supabaseServiceRoleKey",
       "environmentVariableName": "SUPABASE_SERVICE_ROLE_KEY"
-    },
-    {
-      "cloudFormationParameterName": "resendApiKey",
-      "environmentVariableName": "RESEND_API_KEY"
+
+   
     }
   ]
 } 

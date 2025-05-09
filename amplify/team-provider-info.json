@@ -13,8 +13,8 @@
           "stripeSecretKey": "AMPLIFY_PARAMETER_STORE",
           "stripeWebhookSecret": "AMPLIFY_PARAMETER_STORE",
           "deepseekApiKey": "AMPLIFY_PARAMETER_STORE",
-          "supabaseServiceRoleKey": "AMPLIFY_PARAMETER_STORE",
-          "resendApiKey": "AMPLIFY_PARAMETER_STORE"
+          "supabaseServiceRoleKey": "AMPLIFY_PARAMETER_STORE"
+         
         }
       },
       "auth": {
@@ -36,8 +36,7 @@
           "stripeSecretKey": "AMPLIFY_PARAMETER_STORE",
           "stripeWebhookSecret": "AMPLIFY_PARAMETER_STORE",
           "deepseekApiKey": "AMPLIFY_PARAMETER_STORE",
-          "supabaseServiceRoleKey": "AMPLIFY_PARAMETER_STORE",
-          "resendApiKey": "AMPLIFY_PARAMETER_STORE"
+          "supabaseServiceRoleKey": "AMPLIFY_PARAMETER_STORE"
         }
       },
       "auth": {

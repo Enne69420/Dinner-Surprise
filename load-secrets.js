@@ -15,8 +15,7 @@ const createEnvFile = () => {
       'STRIPE_SECRET_KEY',
       'STRIPE_WEBHOOK_SECRET',
       'DEEPSEEK_API_KEY',
-      'SUPABASE_SERVICE_ROLE_KEY',
-      'RESEND_API_KEY'
+      'SUPABASE_SERVICE_ROLE_KEY'
     ];
     
     // Add each secret to the env file if it exists in the environment

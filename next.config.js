@@ -10,10 +10,8 @@ const nextConfig = {
     NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY: process.env.NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY || 'price_premium_yearly',
     // Default URLs that will work for both local and production environments
     STRIPE_SUCCESS_URL: process.env.STRIPE_SUCCESS_URL || '/payment-success',
-    STRIPE_CANCEL_URL: process.env.STRIPE_CANCEL_URL || '/payment-cancel',
+    STRIPE_CANCEL_URL: process.env.STRIPE_CANCEL_URL || '/payment-cancel'
     // Default empty values for optional services
-    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY || '',
-    RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   },
   // Increase serverless function timeout for API routes that need more time
   serverRuntimeConfig: {
