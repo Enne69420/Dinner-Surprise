@@ -1,0 +1,25 @@
+{
+  "lambdaLayers": [],
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "stripeSecretKey",
+      "environmentVariableName": "STRIPE_SECRET_KEY"
+    },
+    {
+      "cloudFormationParameterName": "stripeWebhookSecret",
+      "environmentVariableName": "STRIPE_WEBHOOK_SECRET"
+    },
+    {
+      "cloudFormationParameterName": "deepseekApiKey",
+      "environmentVariableName": "DEEPSEEK_API_KEY"
+    },
+    {
+      "cloudFormationParameterName": "supabaseServiceRoleKey",
+      "environmentVariableName": "SUPABASE_SERVICE_ROLE_KEY"
+    },
+    {
+      "cloudFormationParameterName": "resendApiKey",
+      "environmentVariableName": "RESEND_API_KEY"
+    }
+  ]
+} 

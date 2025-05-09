@@ -1,0 +1,54 @@
+version: 2
+# AWS Amplify Gen 2 Configuration
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+        - npm install -g @aws-amplify/cli
+    build:
+      commands:
+        - touch .env.local
+        # Environment variables accessible at build time
+        - echo "NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL" >> .env.local
+        - echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" >> .env.local
+        - echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.local
+        - echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY" >> .env.local
+        - echo "NEXT_PUBLIC_PRICE_ID_PREMIUM_MONTHLY=$NEXT_PUBLIC_PRICE_ID_PREMIUM_MONTHLY" >> .env.local
+        - echo "NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY=$NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY" >> .env.local
+        - echo "NEXT_PUBLIC_AWS_REGION=$AWS_REGION" >> .env.local
+        - echo "NEXT_PUBLIC_API_ENDPOINT=$NEXT_PUBLIC_API_ENDPOINT" >> .env.local
+        - echo "AMPLIFY_SKIP_APP_ID_MISMATCH_CHECK=true" >> .env.local
+        - cat .env.local
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
+
+# Backend configuration for Amplify Gen 2
+backend:
+  phases:
+    build:
+      commands:
+        - export AWS_REGION=us-east-1
+        - echo "Using Amplify AppId: d2odppyr9yu5gf in region $AWS_REGION"
+        - npm install -g @aws-amplify/cli
+        - amplify --version
+        - amplify init --appId d2odppyr9yu5gf --envName main --yes
+        - amplify env pull --appId d2odppyr9yu5gf --envName main
+        - amplifyPush --simple
+
+# Lambda function configuration
+function:
+  - name: "dinnerSurpriseFunction"
+    runtime: "nodejs18.x"
+    handler: "src/index.handler"
+    environment:
+      variables:
+        NODE_ENV: "production"
+        AMPLIFY_SKIP_APP_ID_MISMATCH_CHECK: "true" 
