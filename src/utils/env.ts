@@ -20,20 +20,9 @@ declare const process: {
  */
 export function getEnv(key: string, defaultValue: string = ''): string {
   try {
-    // First try direct process.env access
+    // First try direct process.env access - this will work with Amplify Gen 2 secrets
     if (process.env[key]) {
       return process.env[key] || defaultValue;
-    }
-
-    // Try Amplify Gen 2 specific patterns
-    // In Amplify Gen 2, secrets are automatically loaded into environment variables
-    // through SSM Parameter Store during the build phase
-    
-    // If we're in a Lambda function, Amplify should have injected the secrets directly
-    
-    // Log debugging information in non-production environments
-    if (process.env.NODE_ENV !== 'production') {
-      console.debug(`Environment variable lookup for ${key}: not found in direct environment`);
     }
 
     // Return default value if not found
