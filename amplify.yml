@@ -15,6 +15,11 @@ frontend:
         - 'echo "NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY=$NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY" >> .env.local'
         - 'echo "NEXT_PUBLIC_AWS_REGION=$AWS_REGION" >> .env.local'
         - 'echo "NEXT_PUBLIC_API_ENDPOINT=$NEXT_PUBLIC_API_ENDPOINT" >> .env.local'
+        # Add server-side environment variables (non-Next.js prefixed vars are server-side only)
+        - 'echo "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}" >> .env.local'
+        - 'echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" >> .env.local'
+        - 'echo "DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}" >> .env.local'
+        - 'echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}" >> .env.local'
         # Safely show the environment file without revealing secrets
         - 'echo "Environment file created for frontend build"'
     build:
