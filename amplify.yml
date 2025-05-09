@@ -5,7 +5,7 @@ frontend:
     preBuild:
       commands:
         - 'npm ci'
-        # Create environment file for Next.js
+        # Create environment file for Next.js with public variables
         - 'touch .env.local'
         - 'echo "NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL" >> .env.local'
         - 'echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" >> .env.local'
@@ -15,29 +15,51 @@ frontend:
         - 'echo "NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY=$NEXT_PUBLIC_PRICE_ID_PREMIUM_YEARLY" >> .env.local'
         - 'echo "NEXT_PUBLIC_AWS_REGION=$AWS_REGION" >> .env.local'
         - 'echo "NEXT_PUBLIC_API_ENDPOINT=$NEXT_PUBLIC_API_ENDPOINT" >> .env.local'
-        # Add server-side environment variables (non-Next.js prefixed vars are server-side only)
-        - 'echo "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}" >> .env.local'
-        - 'echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}" >> .env.local'
-        - 'echo "DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}" >> .env.local'
-        - 'echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}" >> .env.local'
-        # Try to directly access SSM parameters if Environment Variables aren't working
+        
+        # Directly access secrets from SSM Parameter Store using app ID
         - |
-          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "SUPABASE_SERVICE_ROLE_KEY not found in environment, attempting to get from SSM..."
-            # Try to get from SSM directly (make sure IAM permissions are set)
-            export SSM_SUPABASE_KEY=$(aws ssm get-parameter --name "/amplify/dyapawq5wdyx3/main/SUPABASE_SERVICE_ROLE_KEY" --with-decryption --query "Parameter.Value" --output text 2>/dev/null || echo "")
-            if [ ! -z "$SSM_SUPABASE_KEY" ]; then
-              echo "Successfully retrieved SUPABASE_SERVICE_ROLE_KEY from SSM"
-              echo "SUPABASE_SERVICE_ROLE_KEY=$SSM_SUPABASE_KEY" >> .env.local
-            else
-              echo "Failed to retrieve SUPABASE_SERVICE_ROLE_KEY from SSM"
-            fi
+          # Get secrets from SSM Parameter Store
+          echo "Retrieving secrets for App ID dyapawq5wdyx3..."
+          SUPABASE_SERVICE_ROLE_KEY=$(aws ssm get-parameter --name "/amplify/dyapawq5wdyx3/SUPABASE_SERVICE_ROLE_KEY" --with-decryption --query Parameter.Value --output text 2>/dev/null || echo "")
+          STRIPE_SECRET_KEY=$(aws ssm get-parameter --name "/amplify/dyapawq5wdyx3/STRIPE_SECRET_KEY" --with-decryption --query Parameter.Value --output text 2>/dev/null || echo "")
+          STRIPE_WEBHOOK_SECRET=$(aws ssm get-parameter --name "/amplify/dyapawq5wdyx3/STRIPE_WEBHOOK_SECRET" --with-decryption --query Parameter.Value --output text 2>/dev/null || echo "")
+          DEEPSEEK_API_KEY=$(aws ssm get-parameter --name "/amplify/dyapawq5wdyx3/DEEPSEEK_API_KEY" --with-decryption --query Parameter.Value --output text 2>/dev/null || echo "")
+          
+          # Write secrets to .env.local if found
+          if [ ! -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> .env.local
+            echo "Successfully retrieved SUPABASE_SERVICE_ROLE_KEY"
+          else
+            echo "WARNING: Failed to retrieve SUPABASE_SERVICE_ROLE_KEY"
           fi
-        # Debug: Check if SUPABASE variables exist (no values shown for security)
-        - 'echo "Checking environment variables presence:"' 
-        - 'echo "NEXT_PUBLIC_SUPABASE_URL exists: $(if [ ! -z \"$NEXT_PUBLIC_SUPABASE_URL\" ]; then echo YES; else echo NO; fi)"'
-        - 'echo "SUPABASE_SERVICE_ROLE_KEY exists: $(if [ ! -z \"$SUPABASE_SERVICE_ROLE_KEY\" ]; then echo YES; else echo NO; fi)"'
-        # Safely show the environment file without revealing secrets
+          
+          if [ ! -z "$STRIPE_SECRET_KEY" ]; then
+            echo "STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY" >> .env.local
+            echo "Successfully retrieved STRIPE_SECRET_KEY"
+          else
+            echo "WARNING: Failed to retrieve STRIPE_SECRET_KEY"
+          fi
+          
+          if [ ! -z "$STRIPE_WEBHOOK_SECRET" ]; then
+            echo "STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK_SECRET" >> .env.local
+            echo "Successfully retrieved STRIPE_WEBHOOK_SECRET"
+          else
+            echo "WARNING: Failed to retrieve STRIPE_WEBHOOK_SECRET"
+          fi
+          
+          if [ ! -z "$DEEPSEEK_API_KEY" ]; then
+            echo "DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY" >> .env.local
+            echo "Successfully retrieved DEEPSEEK_API_KEY"
+          else
+            echo "WARNING: Failed to retrieve DEEPSEEK_API_KEY"
+          fi
+        
+        # Debug: Check if variables exist (no values shown for security)
+        - 'echo "Environment variables presence check:"'
+        - 'echo "NEXT_PUBLIC_SUPABASE_URL: $(if [ ! -z \"$NEXT_PUBLIC_SUPABASE_URL\" ]; then echo YES; else echo NO; fi)"'
+        - 'echo "NEXT_PUBLIC_SUPABASE_ANON_KEY: $(if [ ! -z \"$NEXT_PUBLIC_SUPABASE_ANON_KEY\" ]; then echo YES; else echo NO; fi)"'
+        - 'echo "SUPABASE_SERVICE_ROLE_KEY: $(if [ ! -z \"$SUPABASE_SERVICE_ROLE_KEY\" ]; then echo YES; else echo NO; fi)"'
+
         - 'echo "Environment file created for frontend build"'
     build:
       commands:
@@ -56,7 +78,7 @@ backend:
   phases:
     build:
       commands:
-        - 'echo "Using App ID: d2odppyr9yu5gf in region: us-east-1"'
+        - 'echo "Using App ID: dyapawq5wdyx3 in region: us-east-1"'
         - 'echo "Environment: main"'
         - 'echo "Skipping backend deployment - using existing resources"'
 
@@ -68,8 +90,9 @@ function:
     environment:
       variables:
         NODE_ENV: "production"
-        # Add direct references to environment variables from Amplify console
+        # For Lambda functions, Amplify Gen 2 will automatically inject secrets
+        # These references will be resolved at deployment time
+        SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
         STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
         STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
         DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-        SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}

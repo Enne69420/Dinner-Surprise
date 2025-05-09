@@ -1,27 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from "openai";
 import { createClient } from '@supabase/supabase-js';
+import { getEnv, getRequiredEnv, checkRequiredEnvs } from '@/utils/env';
+
+// Log environment variable status for debugging
+const envStatus = checkRequiredEnvs([
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'DEEPSEEK_API_KEY'
+]);
+console.log('API Environment status:', envStatus);
 
 // Initialize OpenAI client with DeepSeek's base URL
 let openai: OpenAI;
 try {
-  if (!process.env.DEEPSEEK_API_KEY) {
+  const apiKey = getEnv('DEEPSEEK_API_KEY');
+  if (!apiKey) {
     console.error('WARNING: DEEPSEEK_API_KEY is not set in environment variables');
   }
   
   openai = new OpenAI({
     baseURL: "https://api.deepseek.com/v1",
-    apiKey: process.env.DEEPSEEK_API_KEY || 'dummy_key_for_development',
+    apiKey: apiKey || 'dummy_key_for_development',
   });
 } catch (error) {
   console.error('Error initializing OpenAI client:', error);
 }
 
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabase;
+try {
+  // Get the required environment variables with more detailed error handling
+  console.log('Attempting to initialize Supabase client...');
+  
+  // In Amplify Gen 2, secrets should be available directly as environment variables
+  // after being loaded from SSM Parameter Store during build
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  console.log('Supabase environment check:', {
+    urlAvailable: !!supabaseUrl,
+    keyAvailable: !!supabaseKey
+  });
+  
+  // Check if environment variables are available
+  if (!supabaseUrl) {
+    throw new Error(
+      'NEXT_PUBLIC_SUPABASE_URL is required. Check that it\'s configured in Amplify Console.'
+    );
+  }
+  
+  if (!supabaseKey) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY is required. Check that it\'s configured in Amplify Secret Management.'
+    );
+  }
+  
+  console.log('Supabase environment variables found - initializing client');
+  supabase = createClient(supabaseUrl, supabaseKey);
+} catch (error) {
+  console.error('Error initializing Supabase client:', error);
+  // We'll handle this in the API route when the client is used
+}
 
 // Helper function to extract JSON from markdown code blocks or text
 function extractJsonFromText(text: string): string {
@@ -93,35 +133,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed to update usage: ${updateError.message}` }, { status: 500 });
     }
 
-    // For testing, create a mock recipe if DeepSeek API key is not available
-    if (!process.env.DEEPSEEK_API_KEY) {
-      console.log('Using mock recipe because DEEPSEEK_API_KEY is not set');
-      
-      // Extract ingredient names for the mock recipe
-      const ingredientNames = ingredients.map((ing: any) => {
-        if (typeof ing === 'object' && ing.name) {
-          return ing.name;
-        }
-        return ing;
-      });
-      
-      const mockRecipe = {
-        title: `${ingredientNames[0]} ${ingredientNames.length > 1 ? `and ${ingredientNames[1]}` : ''} Recipe`,
-        ingredients: ingredientNames.map((ing: string) => `100g ${ing}`),
-        steps: [
-          "1. Prepare and measure all ingredients.",
-          `2. Combine ${ingredientNames.join(', ')} in a suitable dish.`,
-          "3. Cook according to your preference.",
-          "4. Serve and enjoy!"
-        ],
-        servings: servings,
-        cookingTime: "30 minutes",
-        difficulty: "Medium",
-        calories: 300,
-        protein: 15
-      };
-      return NextResponse.json(mockRecipe);
-    }
 
     // Create the prompt for DeepSeek API
     const prompt = `
