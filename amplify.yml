@@ -5,11 +5,8 @@ frontend:
     preBuild:
       commands:
         - 'npm ci'
-        - 'npm install -g @aws-amplify/cli'
-    build:
-      commands:
+        # Create environment file for Next.js
         - 'touch .env.local'
-        # Environment variables accessible at build time
         - 'echo "NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL" >> .env.local'
         - 'echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" >> .env.local'
         - 'echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY" >> .env.local'
@@ -19,7 +16,10 @@ frontend:
         - 'echo "NEXT_PUBLIC_AWS_REGION=$AWS_REGION" >> .env.local'
         - 'echo "NEXT_PUBLIC_API_ENDPOINT=$NEXT_PUBLIC_API_ENDPOINT" >> .env.local'
         - 'echo "AMPLIFY_SKIP_APP_ID_MISMATCH_CHECK=true" >> .env.local'
-        - 'cat .env.local'
+        # Safely show the environment file without revealing secrets
+        - 'echo "Environment file created for frontend build"'
+    build:
+      commands:
         - 'npm run build'
   artifacts:
     baseDirectory: .next
@@ -30,20 +30,16 @@ frontend:
       - node_modules/**/*
       - .next/cache/**/*
 
-# Backend configuration for Amplify Gen 2
+# Simple backend config that doesn't try to use Amplify CLI
 backend:
   phases:
     build:
       commands:
-        - 'export AWS_REGION=us-east-1'
-        - 'echo "Using Amplify AppId: d2odppyr9yu5gf in region $AWS_REGION"'
-        - 'npm install -g @aws-amplify/cli'
-        - 'amplify --version'
-        - 'amplify init --appId d2odppyr9yu5gf --envName main --yes'
-        - 'amplify env pull --appId d2odppyr9yu5gf --envName main'
-        - 'amplifyPush --simple'
+        - 'echo "Using App ID: d2odppyr9yu5gf in region: us-east-1"'
+        - 'echo "Environment: main"'
+        - 'echo "Skipping backend deployment - using existing resources"'
 
-# Lambda function configuration
+# Lambda function configuration with all required environment variables
 function:
   - name: "dinnerSurpriseFunction"
     runtime: "nodejs18.x"
@@ -51,4 +47,10 @@ function:
     environment:
       variables:
         NODE_ENV: "production"
-        AMPLIFY_SKIP_APP_ID_MISMATCH_CHECK: "true" 
+        AMPLIFY_SKIP_APP_ID_MISMATCH_CHECK: "true"
+        # Add direct references to environment variables from Amplify console
+        STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+        STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+        DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+        SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+        RESEND_API_KEY: ${RESEND_API_KEY} 
