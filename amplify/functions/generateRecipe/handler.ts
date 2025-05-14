@@ -45,26 +45,22 @@ function extractJsonFromText(text: string): string {
 }
 
 /**
- * Lambda handler for generating recipes
+ * Lambda handler for generating recipes - adapted for Amplify Gen 2
  */
 export const handler = async (event: any) => {
   try {
-    // Parse request body
-    const body = JSON.parse(event.body || '{}');
-    const { ingredients, servings, userId } = body;
+    // Parse the request body - handle both direct event and API Gateway event formats
+    const requestBody = typeof event.body === 'string' ? JSON.parse(event.body) : 
+                       event.body || event.arguments || event;
+    
+    const { ingredients, servings, userId } = requestBody;
 
     if (!ingredients || ingredients.length === 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Ingredients are required' })
-      };
+      return formatResponse(400, { error: 'Ingredients are required' });
     }
 
     if (!userId) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'User ID is required' })
-      };
+      return formatResponse(400, { error: 'User ID is required' });
     }
 
     // Check user's monthly usage and tier
@@ -76,21 +72,15 @@ export const handler = async (event: any) => {
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: `Failed to fetch user profile: ${profileError.message}` })
-      };
+      return formatResponse(500, { error: `Failed to fetch user profile: ${profileError.message}` });
     }
     
     // Check if user has exceeded their monthly limit
     const monthlyLimit = profile.tier === 'premium' ? Infinity : 3;
     if (profile.monthly_usage >= monthlyLimit) {
-      return {
-        statusCode: 403,
-        body: JSON.stringify({ 
-          error: 'Monthly recipe generation limit reached. Please upgrade to premium for unlimited recipes.' 
-        })
-      };
+      return formatResponse(403, { 
+        error: 'Monthly recipe generation limit reached. Please upgrade to premium for unlimited recipes.' 
+      });
     }
 
     // Increment monthly usage
@@ -104,10 +94,7 @@ export const handler = async (event: any) => {
 
     if (updateError) {
       console.error('Error updating monthly usage:', updateError);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: `Failed to update usage: ${updateError.message}` })
-      };
+      return formatResponse(500, { error: `Failed to update usage: ${updateError.message}` });
     }
 
     // Create the prompt for DeepSeek API
@@ -194,80 +181,43 @@ export const handler = async (event: any) => {
             : recipeData.servings || servings
         };
 
-        return {
-          statusCode: 200,
-          body: JSON.stringify(processedRecipe)
-        };
-      } catch (jsonError) {
-        console.error('JSON parsing error:', jsonError, 'Content:', cleanedContent);
-        
-        // Create a simplified recipe as fallback
-        const ingredientNames = ingredients.map((ing: any) => {
-          if (typeof ing === 'object' && ing.name) {
-            return ing.name;
-          }
-          return ing;
+        return formatResponse(200, processedRecipe);
+      } catch (parseError) {
+        console.error('Error parsing recipe data:', parseError, cleanedContent);
+        return formatResponse(500, { 
+          error: 'Failed to parse recipe data', 
+          details: (parseError as Error).message,
+          rawContent: content.substring(0, 200) + '...' // Include part of the raw content for debugging
         });
-        
-        const fallbackRecipe = {
-          title: `${ingredientNames[0]} ${ingredientNames.length > 1 ? `and ${ingredientNames[1]}` : ''} Recipe`,
-          ingredients: ingredientNames.map((ing: string) => `100g ${ing}`),
-          steps: [
-            "1. Prepare and measure all ingredients.",
-            `2. Combine ${ingredientNames.join(', ')} in a suitable dish.`,
-            "3. Cook according to your preference.",
-            "4. Serve and enjoy!"
-          ],
-          servings: servings,
-          cookingTime: "30 minutes",
-          difficulty: "Medium",
-          calories: 300,
-          protein: 15
-        };
-        
-        console.log('Using fallback recipe due to JSON parsing error');
-        return {
-          statusCode: 200,
-          body: JSON.stringify(fallbackRecipe)
-        };
       }
-    } catch (apiError: any) {
-      console.error('AI API error:', apiError);
-      
-      // Roll back the usage increment
-      await supabase
-        .from('profiles')
-        .update({ 
-          monthly_usage: profile.monthly_usage - 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
-      
-      // Check for insufficient balance error
-      if (apiError.status === 402 || (apiError.error && apiError.error.message === 'Insufficient Balance')) {
-        return {
-          statusCode: 503, // Service Unavailable
-          body: JSON.stringify({ 
-            error: 'The AI service is currently unavailable due to insufficient account balance. The site administrator needs to add credits to the DeepSeek account to continue generating recipes.',
-            errorCode: 'INSUFFICIENT_BALANCE'
-          })
-        };
-      }
-      
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ 
-          error: apiError.message || 'Failed to generate recipe from AI service' 
-        })
-      };
+    } catch (aiError) {
+      console.error('Error calling AI service:', aiError);
+      return formatResponse(500, { 
+        error: 'Failed to generate recipe', 
+        details: (aiError as Error).message 
+      });
     }
-  } catch (error: any) {
-    console.error('Recipe generation error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ 
-        error: error.message || 'Failed to generate recipe' 
-      })
-    };
+  } catch (error) {
+    console.error('Unexpected error in Lambda handler:', error);
+    return formatResponse(500, { 
+      error: 'Internal server error', 
+      message: (error as Error).message 
+    });
   }
-}; 
+};
+
+/**
+ * Format the response based on the context
+ * Amplify Gen 2 functions can return direct objects, but we format for consistency
+ */
+function formatResponse(statusCode: number, body: any) {
+  return {
+    statusCode,
+    body: JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': '*'
+    }
+  };
+} 

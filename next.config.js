@@ -18,9 +18,11 @@ const nextConfig = {
     // or .env.local for local dev, but including them here ensures they are available if directly accessed via process.env in Next.js config phase
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    // Amplify Gen 2 configuration
     NEXT_PUBLIC_AMPLIFY_API_ENDPOINT: process.env.NEXT_PUBLIC_AMPLIFY_API_ENDPOINT,
     NEXT_PUBLIC_AMPLIFY_API_KEY: process.env.NEXT_PUBLIC_AMPLIFY_API_KEY,
     NEXT_PUBLIC_AMPLIFY_REGION: process.env.NEXT_PUBLIC_AMPLIFY_REGION || 'us-east-1',
+    NEXT_PUBLIC_AMPLIFY_REST_ENDPOINT: process.env.NEXT_PUBLIC_AMPLIFY_REST_ENDPOINT || '',
     // Default empty values for optional services
   },
   // Increase serverless function timeout for API routes that need more time

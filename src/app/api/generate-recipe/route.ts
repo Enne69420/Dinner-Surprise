@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from '@/utils/supabase';
 
 /**
  * Handler for the recipe generation API endpoint
- * This now serves as a proxy to the Amplify function that contains the secret handling
+ * This serves as a proxy to the Amplify function that contains the secret handling
  */
 export async function POST(req: NextRequest) {
   try {
@@ -42,33 +42,41 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Call AWS Lambda Function (Amplify function)
-      // In production, we would use AWS SDK to invoke the Lambda directly,
-      // or use API Gateway to create a secure endpoint to the function
-      
-      // For demonstration purposes, we'll call the function through API Gateway
-      // The actual implementation would depend on your specific Amplify setup
-      const LAMBDA_API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT + '/generate-recipe';
-      
-      const response = await fetch(LAMBDA_API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      try {
+        // Call the Amplify function using direct HTTP call
+        // In production, this endpoint URL would be provided by Amplify after deploying the function
+        const amplifyFunctionUrl = process.env.NEXT_PUBLIC_AMPLIFY_REST_ENDPOINT || '';
+        
+        if (!amplifyFunctionUrl) {
+          throw new Error('Amplify function URL is not configured');
+        }
+        
+        const response = await fetch(`${amplifyFunctionUrl}/generateRecipeFunction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to call Amplify function: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        return NextResponse.json(result);
+      } catch (amplifyError: any) {
+        console.error('Error calling Amplify function:', amplifyError);
+        
         return NextResponse.json(
-          { error: errorData.error || 'Failed to generate recipe', ...errorData },
-          { status: response.status }
+          { 
+            error: 'Failed to generate recipe',
+            message: amplifyError.message || 'Unknown error'
+          },
+          { status: 500 }
         );
       }
-      
-      const data = await response.json();
-      return NextResponse.json(data);
-      
     } catch (error: any) {
       console.error('Error in recipe generation API:', error);
       return NextResponse.json(

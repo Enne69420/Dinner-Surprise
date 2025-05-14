@@ -26,9 +26,9 @@ The application follows a hybrid approach:
 │   │   └── supabase/ # Supabase client utilities
 │   │       ├── client.ts # Browser client
 │   │       └── server.ts # Server client
-│   ├── App.tsx # UI code with todo functionality
-│   ├── index.css # Styling
-│   └── main.tsx # Application entry point
+│   ├── app/ # Next.js app directory
+│   ├── components/ # React components
+│   └── middleware.ts # Next.js middleware
 ├── next.config.js # Next.js configuration
 ├── amplify.yml # Amplify deployment configuration
 ├── package.json
@@ -59,9 +59,18 @@ This application requires several environment variables:
 - `API_KEY`: API key for external services
 - `API_ENDPOINT`: Endpoint for external API calls
 
+## Setting Up Environment Variables in AWS Amplify Console
+
+1. Go to the AWS Amplify Console and select your app
+2. Navigate to "App settings" > "Environment variables"
+3. Add all the required environment variables as key-value pairs
+4. Make sure to toggle "All environments" if you want variables to apply to all branches
+
+**Important**: For sensitive values like API keys, click the "Hide from build log" option to keep them secure.
+
 ## Important Notes on Environment Variables
 
-- For local development, set these in `.env.local`
+- For local development, set these in `.env.local` (never commit this file to Git)
 - For production, set these in the Amplify Console under "App settings" > "Environment variables"
 - The `.env.local` file is not accessible in the Amplify Console environment
 - Access these variables in Lambda functions through `process.env`
@@ -83,7 +92,19 @@ This application requires several environment variables:
 
 1. Connect your repository to AWS Amplify Console
 2. Configure all required environment variables in the Amplify Console
-3. Deploy the application
+3. Ensure your build settings in `amplify.yml` match the Amplify Gen 2 requirements
+4. Deploy the application
+
+## Troubleshooting Amplify Deployment
+
+If you encounter the error `!Failed to set up process.env.secrets` or other environment variable issues:
+
+1. Check if all required environment variables are set in the Amplify Console
+2. Verify that the `amplify.yml` file is correctly formatted
+3. Ensure you're using the correct Amplify commands for Gen 2:
+   - Use `npx ampx pipeline-deploy` for CI/CD builds
+   - Use `npx ampx sandbox` for local development
+4. Clear the build cache and redeploy if necessary
 
 ## Credits
 
