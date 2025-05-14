@@ -16,5 +16,6 @@ export const generateRecipeFunction = defineFunction({
     // Regular environment variables set by Amplify (provide placeholders or defaults here)
     NEXT_PUBLIC_SUPABASE_URL: 'YOUR_SUPABASE_URL_HERE', // Placeholder, will be overridden by Amplify env var
     NODE_ENV: 'development', // Default, will be overridden by Amplify env var for different environments
+    NEXT_PUBLIC_BASE_URL: 'YOUR_BASE_URL_HERE' // Placeholder for base URL
   },
 }); 

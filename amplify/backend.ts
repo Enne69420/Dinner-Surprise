@@ -1,8 +1,10 @@
 import { defineBackend } from '@aws-amplify/backend';
-import { generateRecipeFunction } from './functions/generateRecipe';
+import { data } from './data/resource';
+import { apiFunction } from './functions/api-function/resource';
 
 // Define backend resources for the Dinner Surprise application
 export const backend = defineBackend({
-  // Register the function that handles recipe generation
-  generateRecipeFunction
+  // Only using Amplify for data and function APIs since Supabase handles auth
+  data,
+  apiFunction
 }); 
